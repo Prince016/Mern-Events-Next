@@ -27,7 +27,8 @@ import { FileUploader } from "./FileUploader";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useUploadThing } from "@/lib/uploadthing";
-
+import CreateEvent from "@/app/(root)/events/create/page";
+import { createEvent } from "@/lib/actions/event.actions";
 
 // const formSchema = z.object({
 //   username: z.string().min(2, {
@@ -54,10 +55,40 @@ const EventForm = ({ userId, type }: EventFormProps) => {
     defaultValues: initalValues,
   });
 
-  function onSubmit(values: z.infer<typeof eventFormSchema>) {
+  async function onSubmit(values: z.infer<typeof eventFormSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     console.log(values);
+    const eventData = values;
+    let uploadedImageUrl = values.imageUrl;
+
+    if (files.length > 0) {
+      const uploadedImages = await startUpload(files);
+
+      if (!uploadedImageUrl) {
+        return;
+      }
+      uploadedImageUrl = uploadedImageUrl[0]?.url;
+    }
+
+    if(type==="Create"){
+      try{
+        const newEvent = await createEvent({
+          event:{...values,imageUrl:uploadedImageUrl},
+          userId,
+          path:'/profile'
+        })
+
+        if(newEvent){
+          form.reset();
+          router.push(`/events/${newEvent._id}`)
+        }
+      }
+      catch(err){
+        console.log(err);
+
+      }
+    }
   }
 
   return (
@@ -185,7 +216,7 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                     </p>
                     <DatePicker
                       selected={field.value}
-                      onChange={(date: Date) => field.onChange(date)}
+                      onChange={(date: Date | null) => field.onChange(date)}
                       showTimeSelect
                       timeInputLabel="Time:"
                       dateFormat="MM/dd/yyyy h:mm aa"
@@ -215,14 +246,14 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                     <p className="ml-3 whitespace-nowrap text-grey-600">
                       End Date:
                     </p>
-                    {/* <DatePicker
+                    <DatePicker
                       selected={field.value}
-                      onChange={(date: Date) => field.onChange(date)}
+                      onChange={(date: Date | null) => field.onChange(date)}
                       showTimeSelect
                       timeInputLabel="Time:"
                       dateFormat="MM/dd/yyyy h:mm aa"
                       wrapperClassName="datePicker"
-                    /> */}
+                    />
                   </div>
                 </FormControl>
                 <FormMessage />
